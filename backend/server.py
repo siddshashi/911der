@@ -5,6 +5,7 @@ Handles emergency call classification and AI voice agent for non-emergencies
 
 import asyncio
 import os
+import random
 import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -21,6 +22,34 @@ from voice_agent import DeepgramVoiceAgent
 from groq_inference import get_call_summary, get_criticality_level
 
 load_dotenv()
+
+def add_random_offset_to_coordinates(lat: float, lon: float, max_offset_feet: float = 500) -> tuple[float, float]:
+    """
+    Add random offset to coordinates within specified distance in feet.
+    
+    Args:
+        lat: Original latitude
+        lon: Original longitude  
+        max_offset_feet: Maximum offset distance in feet (default: 250)
+    
+    Returns:
+        Tuple of (new_latitude, new_longitude)
+    """
+    # Convert feet to degrees
+    # 1 degree of latitude ≈ 364,000 feet
+    # 1 degree of longitude ≈ 288,200 feet (at 37.8° latitude)
+    lat_offset_degrees = max_offset_feet / 364000
+    lon_offset_degrees = max_offset_feet / 288200
+    
+    # Generate random offsets within the range
+    lat_offset = random.uniform(-lat_offset_degrees, lat_offset_degrees)
+    lon_offset = random.uniform(-lon_offset_degrees, lon_offset_degrees)
+    
+    # Apply offsets
+    new_lat = lat + lat_offset
+    new_lon = lon + lon_offset
+    
+    return new_lat, new_lon
 
 # Initialize services
 emergency_classifier = EmergencyClassifier()
@@ -161,9 +190,17 @@ async def process_speech(request: Request):
         # Sid's code: sending to supabase
         
         severity = enum_to_int[severity_as_enum]
+        
+        # Original coordinates (San Francisco area)
+        original_lat = 37.8029
+        original_lon = -122.44879
+        
+        # Add random offset within ±250 feet
+        randomized_lat, randomized_lon = add_random_offset_to_coordinates(original_lat, original_lon)
+        
         caller_data = {
-                "latitude": 37.8029,
-                "longitude": -122.44879,
+                "latitude": randomized_lat,
+                "longitude": randomized_lon,
                 "severity": severity,
                 "metadata": speech_summary
                 }
