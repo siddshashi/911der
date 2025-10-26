@@ -13,6 +13,7 @@ from twilio.twiml.voice_response import VoiceResponse
 import uvicorn
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from pydantic import BaseModel
 
 from emergency_classifier import EmergencyClassifier
 from twilio_webhook import webhook_handler
@@ -29,8 +30,8 @@ class Caller(BaseModel):
     severity: int
     metadata: str
 
-SUPABASE_URL = "https://kgrgpyfhpxbeymuamndi.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtncmdweWZocHhiZXltdWFtbmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0MTk0NTQsImV4cCI6MjA3Njk5NTQ1NH0.oqCw6wA45LElpZ1yQwSBWl5EHzqKzsDrdOHp1GhiFSE"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -146,6 +147,17 @@ async def process_speech(request: Request):
         classification_result = await emergency_classifier.classify_call(speech_result)
         
         print(f"📊 Classification: {classification_result}")
+        
+        # Sid's code: sending to supabase
+        severity = 1 if classification_result["is_emergency"] else 0
+        caller_data = {
+                "latitude": 37.8029,
+                "longitude": -122.44879,
+                "severity": severity,
+                "metadata": speech_result
+                }
+        response = supabase.table("callers").insert(caller_data).execute()
+        print(f"saved caller to database: {response}")
         
         if classification_result["is_emergency"]:
             # Emergency - transfer to human dispatcher
