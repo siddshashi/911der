@@ -54,6 +54,9 @@ def add_random_offset_to_coordinates(lat: float, lon: float, max_offset_feet: fl
 # Initialize services
 emergency_classifier = EmergencyClassifier()
 
+# Global variable to store current call transcript for voice agent
+current_call_transcript = ""
+
 class Caller(BaseModel):
     latitude: float
     longitude: float
@@ -220,6 +223,12 @@ async def process_speech(request: Request):
             # Non-emergency - connect to AI voice agent
             print("📞 Non-emergency - connecting to AI voice agent")
             
+            # Store the transcript in a global variable for the WebSocket to access
+            # This is a simple approach for now - in production you'd want a more robust solution
+            global current_call_transcript
+            current_call_transcript = speech_result
+            print(f"📝 Stored transcript for voice agent: {speech_result[:100]}...")
+            
             voice_agent_url = os.getenv("VOICE_AGENT_WS_URL", "wss://your-ngrok-url.ngrok.io/twilio")
             
             response = VoiceResponse()
@@ -241,6 +250,15 @@ async def process_speech(request: Request):
 async def voice_agent_websocket(websocket: WebSocket):
     """WebSocket endpoint for Deepgram voice agent"""
     print("🎤 WebSocket connection received on /twilio")
+    
+    # Get transcript from global variable
+    global current_call_transcript
+    call_transcript = current_call_transcript
+    if call_transcript:
+        print(f"📝 Call transcript received: {call_transcript[:100]}...")
+    else:
+        print("⚠️  No call transcript available")
+    
     await websocket.accept()
     print("✅ WebSocket connection accepted")
     
@@ -276,9 +294,9 @@ async def voice_agent_websocket(websocket: WebSocket):
                     self.closed = True
                     raise StopAsyncIteration
         
-        # Use the voice agent
+        # Use the voice agent with call transcript context
         wrapped_websocket = FastAPIWebSocketWrapper(websocket)
-        voice_agent = DeepgramVoiceAgent()
+        voice_agent = DeepgramVoiceAgent(call_transcript=call_transcript)
         await voice_agent.twilio_handler(wrapped_websocket)
         
     except WebSocketDisconnect:

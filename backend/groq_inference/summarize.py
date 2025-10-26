@@ -48,6 +48,63 @@ async def get_call_summary(call_transcript: str) -> str:
         return "ERROR: No content returned"
     return content.strip()
 
+GREETING_PROMPT = """
+You are a helpful AI assistant for emergency dispatch. Generate a personalized greeting message for a caller based on their initial emergency description.
+
+The greeting should:
+1. Acknowledge their specific emergency situation briefly
+2. Ask a relevant, helpful question to immediately assist with their problem
+3. Be empathetic and professional
+4. Keep it concise (1-2 sentences max)
+5. Sound natural and conversational
+
+Examples:
+- "Hey, I heard about your emergency with the car accident. Are you or anyone else injured?"
+- "I understand you're dealing with a fire situation. Is everyone safely out of the building?"
+- "I heard about your medical emergency. Can you tell me more about what's happening right now?"
+
+Generate a personalized greeting based on the caller's description.
+"""
+
+async def generate_personalized_greeting(call_transcript: str) -> str:
+    """
+    Generate a personalized greeting message based on the caller's emergency description.
+
+    Args:
+        call_transcript: The text of the emergency call
+
+    Returns:
+        A personalized greeting message
+    """
+    print(f"🔍 Groq input transcript: '{call_transcript}'")
+    try:
+        chat_completion = await client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": GREETING_PROMPT
+                },
+                {
+                    "role": "user",
+                    "content": call_transcript,
+                }
+            ],
+            model="openai/gpt-oss-20b",
+            temperature=0.7,
+            top_p=1,
+            stream=False,
+        )
+        content = chat_completion.choices[0].message.content
+        if content is None:
+            print("⚠️  Groq returned None content")
+            return "Hello, how can I help with your emergency?"
+        result = content.strip()
+        print(f"✅ Groq generated: '{result}'")
+        return result
+    except Exception as e:
+        print(f"❌ Groq error: {e}")
+        return "Hello, how can I help with your emergency?"
+
 if __name__ == "__main__":
     # Sample usage
     sample_transcripts = [

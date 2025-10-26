@@ -8,7 +8,7 @@ import base64
 import json
 import os
 import websockets
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,10 +16,13 @@ load_dotenv()
 class DeepgramVoiceAgent:
     """Voice agent that handles non-emergency calls using Deepgram's Voice Agent API"""
     
-    def __init__(self):
+    def __init__(self, call_transcript: Optional[str] = None):
         self.api_key = os.getenv('DEEPGRAM_API_KEY')
         if not self.api_key:
             raise ValueError("DEEPGRAM_API_KEY environment variable is not set")
+        self.call_transcript = call_transcript
+        self.personalized_greeting = None
+        self.conversation_history = []  # Store conversation messages for memory
     
     def _connect_to_deepgram(self):
         """Establish WebSocket connection to Deepgram's agent service"""
@@ -28,12 +31,60 @@ class DeepgramVoiceAgent:
             subprotocols=["token", self.api_key]
         )
     
+    async def _generate_personalized_greeting(self) -> str:
+        """Generate a personalized greeting based on the call transcript"""
+        print(f"🔍 Voice agent transcript: '{self.call_transcript}'")
+        if not self.call_transcript:
+            print("⚠️  No transcript available, using default greeting")
+            return "Hello, how can I help with your emergency?"
+        
+        try:
+            from groq_inference import generate_personalized_greeting
+            print("🤖 Generating personalized greeting with Groq...")
+            greeting = await generate_personalized_greeting(self.call_transcript)
+            print(f"✅ Generated greeting: {greeting}")
+            return greeting
+        except Exception as e:
+            print(f"❌ Error generating personalized greeting: {e}")
+            return "Hello, how can I help with your emergency?"
+    
+    def _add_to_conversation_history(self, role: str, content: str):
+        """Add a message to the conversation history"""
+        message = {
+            "role": role,
+            "content": content
+        }
+        self.conversation_history.append(message)
+        print(f"📝 Added to history ({role}): {content[:100]}...")
+    
+    def _get_conversation_context(self) -> list:
+        """Get conversation history formatted for Deepgram context"""
+        # Include the initial call transcript as the first user message
+        context = []
+        if self.call_transcript:
+            context.append({
+                "role": "user",
+                "content": f"Initial emergency description: {self.call_transcript}"
+            })
+        
+        # Add conversation history (limit to last 10 messages to avoid token limits)
+        context.extend(self.conversation_history[-10:])
+        return context
+    
     async def twilio_handler(self, twilio_ws):
         """Handle WebSocket connection from Twilio and manage voice agent conversation"""
         audio_queue = asyncio.Queue()
         streamsid_queue = asyncio.Queue()
         
+        # Generate personalized greeting based on call transcript
+        greeting_message = await self._generate_personalized_greeting()
+        print(f"🎤 Generated personalized greeting: {greeting_message}")
+        
         async with self._connect_to_deepgram() as sts_ws:
+            # Get conversation context for memory
+            conversation_context = self._get_conversation_context()
+            print(f"🧠 Conversation context: {len(conversation_context)} messages")
+            
             # Configure the voice agent for emergency dispatch context
             config_message = {
                 "type": "Settings",
@@ -50,6 +101,7 @@ class DeepgramVoiceAgent:
                 },
                 "agent": {
                     "language": "en",
+                    "context": conversation_context,  # Add conversation memory
                     "listen": {
                         "provider": {
                             "type": "deepgram",
@@ -63,15 +115,19 @@ class DeepgramVoiceAgent:
                             "model": "gpt-4o-mini",
                             "temperature": 0.7
                         },
-                        "prompt": """You are a helpful AI assistant for emergency dispatch during high-call-volume incidents. 
+                        "prompt": f"""You are a helpful AI assistant for emergency dispatch during high-call-volume incidents. 
+                        
+                        IMPORTANT CONTEXT: The caller previously described their situation as: "{self.call_transcript or 'No initial description provided'}"
                         
                         Your role is to assist callers with non-emergency inquiries and provide guidance. You should:
                         
                         1. Be empathetic and professional
-                        2. Provide helpful information about the current incident if available
-                        3. Offer guidance on what callers should do
-                        4. Escalate to human operators if the situation becomes urgent
-                        5. Keep responses concise and clear
+                        2. Reference their initial situation when appropriate
+                        3. Provide helpful information about the current incident if available
+                        4. Offer guidance on what callers should do
+                        5. Escalate to human operators if the situation becomes urgent
+                        6. Keep responses concise and clear
+                        7. Remember details from the conversation and reference them when relevant
                         
                         If the caller mentions anything that sounds like an emergency (life-threatening situations, 
                         active crimes, medical emergencies, fires, etc.), immediately advise them to hang up and 
@@ -85,7 +141,7 @@ class DeepgramVoiceAgent:
                             "model": "aura-2-thalia-en"
                         }
                     },
-                    "greeting": "Hello, how can I help with your emergency?"
+                    "greeting": greeting_message
                 }
             }
             
@@ -125,8 +181,14 @@ class DeepgramVoiceAgent:
                             "streamSid": streamsid
                         }
                         await twilio_ws.send(json.dumps(clear_message))
-                except:
-                    pass
+                    elif decoded.get('type') == 'ConversationText':
+                        # Capture conversation messages for memory
+                        role = decoded.get('role', 'assistant')
+                        content = decoded.get('content', '')
+                        if content:
+                            self._add_to_conversation_history(role, content)
+                except Exception as e:
+                    print(f"Error processing Deepgram message: {e}")
                 continue
             
             # Send audio response to Twilio
