@@ -57,13 +57,14 @@ The greeting should:
 3. Be empathetic and professional
 4. Keep it concise (1-2 sentences max)
 5. Sound natural and conversational
+6. Use only plain text - no formatting, asterisks, quotes, or special characters
 
 Examples:
-- "Hey, I heard about your emergency with the car accident. Are you or anyone else injured?"
-- "I understand you're dealing with a fire situation. Is everyone safely out of the building?"
-- "I heard about your medical emergency. Can you tell me more about what's happening right now?"
+- Hey, I heard about your emergency with the car accident. Are you or anyone else injured?
+- I understand you're dealing with a fire situation. Is everyone safely out of the building?
+- I heard about your medical emergency. Can you tell me more about what's happening right now?
 
-Generate a personalized greeting based on the caller's description.
+Generate a personalized greeting based on the caller's description. Respond with plain text only.
 """
 
 async def generate_personalized_greeting(call_transcript: str) -> str:

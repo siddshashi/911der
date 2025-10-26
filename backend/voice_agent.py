@@ -42,29 +42,48 @@ class DeepgramVoiceAgent:
             from groq_inference import generate_personalized_greeting
             print("🤖 Generating personalized greeting with Groq...")
             greeting = await generate_personalized_greeting(self.call_transcript)
-            print(f"✅ Generated greeting: {greeting}")
-            return greeting
+            cleaned_greeting = self._clean_voice_text(greeting)
+            print(f"✅ Generated greeting: {cleaned_greeting}")
+            return cleaned_greeting
         except Exception as e:
             print(f"❌ Error generating personalized greeting: {e}")
             return "Hello, how can I help with your emergency?"
     
+    def _clean_voice_text(self, text: str) -> str:
+        """Clean text for voice output by removing formatting characters"""
+        import re
+        # Remove common formatting characters that could cause voice issues
+        text = re.sub(r'\*+', '', text)  # Remove asterisks
+        text = re.sub(r'_+', '', text)   # Remove underscores
+        text = re.sub(r'`+', '', text)   # Remove backticks
+        text = re.sub(r'#+', '', text)   # Remove hash symbols
+        text = re.sub(r'\[|\]', '', text)  # Remove brackets
+        text = re.sub(r'\(|\)', '', text)  # Remove parentheses
+        text = re.sub(r'\{|\}', '', text)  # Remove braces
+        text = re.sub(r'\n+', ' ', text)  # Replace newlines with spaces
+        text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with single space
+        return text.strip()
+    
     def _add_to_conversation_history(self, role: str, content: str):
         """Add a message to the conversation history"""
+        # Clean the content before storing
+        cleaned_content = self._clean_voice_text(content)
         message = {
             "role": role,
-            "content": content
+            "content": cleaned_content
         }
         self.conversation_history.append(message)
-        print(f"📝 Added to history ({role}): {content[:100]}...")
+        print(f"📝 Added to history ({role}): {cleaned_content[:100]}...")
     
     def _get_conversation_context(self) -> list:
         """Get conversation history formatted for Deepgram context"""
         # Include the initial call transcript as the first user message
         context = []
         if self.call_transcript:
+            cleaned_transcript = self._clean_voice_text(self.call_transcript)
             context.append({
                 "role": "user",
-                "content": f"Initial emergency description: {self.call_transcript}"
+                "content": f"Initial emergency description: {cleaned_transcript}"
             })
         
         # Add conversation history (limit to last 10 messages to avoid token limits)
@@ -101,7 +120,7 @@ class DeepgramVoiceAgent:
                 },
                 "agent": {
                     "language": "en",
-                    "context": conversation_context,  # Add conversation memory
+                    # "context": conversation_context,  # Add conversation memory
                     "listen": {
                         "provider": {
                             "type": "deepgram",
@@ -115,25 +134,17 @@ class DeepgramVoiceAgent:
                             "model": "gpt-4o-mini",
                             "temperature": 0.7
                         },
-                        "prompt": f"""You are a helpful AI assistant for emergency dispatch during high-call-volume incidents. 
-                        
-                        IMPORTANT CONTEXT: The caller previously described their situation as: "{self.call_transcript or 'No initial description provided'}"
-                        
-                        Your role is to assist callers with non-emergency inquiries and provide guidance. You should:
-                        
-                        1. Be empathetic and professional
-                        2. Reference their initial situation when appropriate
-                        3. Provide helpful information about the current incident if available
-                        4. Offer guidance on what callers should do
-                        5. Escalate to human operators if the situation becomes urgent
-                        6. Keep responses concise and clear
-                        7. Remember details from the conversation and reference them when relevant
-                        
-                        If the caller mentions anything that sounds like an emergency (life-threatening situations, 
-                        active crimes, medical emergencies, fires, etc.), immediately advise them to hang up and 
-                        call 911 directly for immediate assistance.
-                        
-                        Focus on being helpful while maintaining safety as the top priority."""
+                        "prompt": f"""You are a helpful emergency dispatch assistant. The caller described: "{self.call_transcript or 'No initial description provided'}"
+
+                        Guidelines:
+                        - Speak naturally and kindly
+                        - Keep responses brief and clear
+                        - Reference their situation when helpful
+                        - Provide specific, actionable guidance
+                        - Remember conversation details
+                        - If they mention life-threatening emergencies, immediately tell them to hang up and call 911 directly
+
+                        Always respond with plain text only - no formatting, asterisks, or special characters. Speak as if talking directly to someone on the phone."""
                     },
                     "speak": {
                         "provider": {
