@@ -12,6 +12,8 @@ from fastapi.responses import Response
 from twilio.twiml.voice_response import VoiceResponse
 import uvicorn
 from dotenv import load_dotenv
+from supabase import create_client, Client
+from pydantic import BaseModel
 
 from emergency_classifier import EmergencyClassifier
 from twilio_webhook import webhook_handler
@@ -21,6 +23,17 @@ load_dotenv()
 
 # Initialize services
 emergency_classifier = EmergencyClassifier()
+
+class Caller(BaseModel):
+    latitude: float
+    longitude: float
+    severity: int
+    metadata: str
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -134,6 +147,17 @@ async def process_speech(request: Request):
         classification_result = await emergency_classifier.classify_call(speech_result)
         
         print(f"📊 Classification: {classification_result}")
+        
+        # Sid's code: sending to supabase
+        severity = 1 if classification_result["is_emergency"] else 0
+        caller_data = {
+                "latitude": 37.8029,
+                "longitude": -122.44879,
+                "severity": severity,
+                "metadata": speech_result
+                }
+        response = supabase.table("callers").insert(caller_data).execute()
+        print(f"saved caller to database: {response}")
         
         if classification_result["is_emergency"]:
             # Emergency - transfer to human dispatcher
