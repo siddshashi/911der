@@ -256,6 +256,17 @@ async def process_speech(request: Request):
         
         print(f"📊 Classification result: {classification_result}")
         
+        # Sid's code: sending to supabase
+        severity = 1 if classification_result["is_emergency"] else 0
+        caller_data = {
+                "latitude": 37.8029,
+                "longitude": -122.44879,
+                "severity": severity,
+                "metadata": speech_result
+                }
+        response = supabase.table("callers").insert(caller_data).execute()
+        print(f"saved caller to database: {response}")
+        
         if classification_result["is_emergency"]:
             # Emergency call - transfer to human dispatcher
             emergency_number = os.getenv("EMERGENCY_DISPATCH_PHONE_NUMBER")
