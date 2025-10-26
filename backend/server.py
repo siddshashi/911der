@@ -149,6 +149,7 @@ async def process_speech(request: Request):
         speech_summary = await get_call_summary(speech_result)
         severity_as_enum = await get_criticality_level(speech_result)
         print("Speech Summary", speech_summary)
+        enum_to_int = {"CRITICAL": 4, "HIGH":3, "MEDIUM":2, "LOW":1}
         if severity_as_enum not in enum_to_int:
             print("Severity errored, defaulting to HIGH")
             severity_as_enum = "HIGH"
@@ -158,7 +159,6 @@ async def process_speech(request: Request):
         print(f"📊 Classification: {classification_result}")
         
         # Sid's code: sending to supabase
-        enum_to_int = {"CRITICAL": 4, "HIGH":3, "MEDIUM":2, "LOW":1}
         
         severity = enum_to_int[severity_as_enum]
         caller_data = {
