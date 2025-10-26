@@ -9,6 +9,11 @@ wheels/
 # Virtual environments
 .venv
 .env
+<<<<<<< HEAD
 
 # Test logs
 /temp
+=======
+.vscode/
+.kiro/
+>>>>>>> 2e10ba7 (made frontend)

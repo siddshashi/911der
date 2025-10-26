@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom marker styles */
+.urgency-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.urgency-marker .marker-circle {
+  transition: all 0.2s ease;
+}
+
+.urgency-marker:hover .marker-circle {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.urgency-marker.selected .marker-circle {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.6);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+}
+
+/* Leaflet popup improvements */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  /* Mobile/touch devices */
+  .urgency-marker .marker-circle {
+    min-width: 32px;
+    min-height: 32px;
+  }
+  
+  .leaflet-control-zoom a {
+    width: 36px;
+    height: 36px;
+    line-height: 36px;
+    font-size: 18px;
+  }
+  
+  .leaflet-popup-content-wrapper {
+    min-width: 280px;
+  }
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  /* Mobile-specific styles */
+  .leaflet-control-container {
+    font-size: 14px;
+  }
+  
+  .leaflet-control-zoom {
+    margin-left: 8px;
+    margin-top: 8px;
+  }
+  
+  .leaflet-control-attribution {
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Improve scrolling on mobile */
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-pan-y {
+  touch-action: pan-y;
+}
