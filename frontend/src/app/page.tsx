@@ -209,6 +209,7 @@ function EmergencyMapApp() {
           <CallDetailsPanel
             call={selectedCall}
             onClose={handleDetailsClose}
+            isDarkMode={isDarkMode}
           />
         </div>
       </div>

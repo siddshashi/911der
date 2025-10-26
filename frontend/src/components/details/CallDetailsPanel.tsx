@@ -6,9 +6,10 @@ import { EmergencyCall, URGENCY_COLORS } from '@/lib/types';
 interface CallDetailsPanelProps {
   call: EmergencyCall | null;
   onClose: () => void;
+  isDarkMode?: boolean;
 }
 
-const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallDetailsPanelProps) {
+const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose, isDarkMode = false }: CallDetailsPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Handle outside click to close panel
@@ -94,7 +95,11 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
       {/* Panel - Responsive */}
       <div
         ref={panelRef}
-        className="fixed inset-0 lg:right-0 lg:top-0 lg:left-auto lg:h-full lg:w-full lg:max-w-md bg-white transform transition-transform duration-300 ease-in-out overflow-y-auto lg:border-l border-gray-200"
+        className={`fixed inset-0 lg:right-0 lg:top-0 lg:left-auto lg:h-full lg:w-full lg:max-w-md transform transition-transform duration-300 ease-in-out overflow-y-auto lg:border-l ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-200'
+        }`}
         style={{
           transform: call ? 'translateX(0)' : 'translateX(100%)',
           zIndex: 10000,
@@ -102,17 +107,29 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
         }}
       >
         {/* Header - Responsive */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg lg:text-xl font-semibold text-gray-900">
+        <div className={`sticky top-0 border-b px-4 lg:px-6 py-4 flex items-center justify-between ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-700' 
+            : 'bg-white border-gray-200'
+        }`}>
+          <h2 className={`text-lg lg:text-xl font-semibold ${
+            isDarkMode ? 'text-gray-100' : 'text-gray-900'
+          }`}>
             Emergency Call Details
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 touch-manipulation"
+            className={`p-2 rounded-full transition-colors duration-200 touch-manipulation ${
+              isDarkMode 
+                ? 'hover:bg-gray-700' 
+                : 'hover:bg-gray-100'
+            }`}
             aria-label="Close details panel"
           >
             <svg 
-              className="w-6 h-6 lg:w-5 lg:h-5 text-gray-500" 
+              className={`w-6 h-6 lg:w-5 lg:h-5 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -131,15 +148,21 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
         <div className="px-4 lg:px-6 py-4 lg:py-6 space-y-4 lg:space-y-6">
           {/* Call ID */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
+            <h3 className={`text-sm font-medium uppercase tracking-wide mb-2 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               Call ID
             </h3>
-            <p className="text-lg font-mono text-gray-900">#{call.id}</p>
+            <p className={`text-lg font-mono ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            }`}>#{call.id}</p>
           </div>
 
           {/* Urgency Level */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+            <h3 className={`text-sm font-medium uppercase tracking-wide mb-3 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               Urgency Level
             </h3>
             <div className="flex items-center gap-3">
@@ -148,10 +171,14 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
                 style={{ backgroundColor: URGENCY_COLORS[call.urgency] }}
               />
               <div>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className={`text-lg font-semibold ${
+                  isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                }`}>
                   {getUrgencyDisplayName(call.urgency)} Priority
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className={`text-sm ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                   {getUrgencyDescription(call.urgency)}
                 </p>
               </div>
@@ -160,16 +187,22 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
 
           {/* Location */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+            <h3 className={`text-sm font-medium uppercase tracking-wide mb-3 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               Location
             </h3>
             <div className="space-y-2">
               {call.location.address && (
-                <p className="text-base text-gray-900 font-medium">
+                <p className={`text-base font-medium ${
+                  isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                }`}>
                   {call.location.address}
                 </p>
               )}
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className={`flex items-center gap-2 text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -183,14 +216,20 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
 
           {/* Timestamp */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+            <h3 className={`text-sm font-medium uppercase tracking-wide mb-3 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               Call Time
             </h3>
             <div className="space-y-1">
-              <p className="text-base text-gray-900 font-medium">
+              <p className={`text-base font-medium ${
+                isDarkMode ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 {timeInfo.date} at {timeInfo.time}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className={`text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
                 {timeInfo.full}
               </p>
             </div>
@@ -198,18 +237,26 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
 
           {/* Description */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+            <h3 className={`text-sm font-medium uppercase tracking-wide mb-3 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
               Call Description
             </h3>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-base text-gray-900 leading-relaxed whitespace-pre-wrap">
+            <div className={`rounded-lg p-4 ${
+              isDarkMode ? 'bg-gray-700' : 'bg-gray-50'
+            }`}>
+              <p className={`text-base leading-relaxed whitespace-pre-wrap ${
+                isDarkMode ? 'text-gray-100' : 'text-gray-900'
+              }`}>
                 {call.description}
               </p>
             </div>
           </div>
 
           {/* Actions - Touch-friendly buttons */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className={`pt-4 border-t ${
+            isDarkMode ? 'border-gray-700' : 'border-gray-200'
+          }`}>
             <div className="flex flex-col lg:flex-row gap-3">
               <button
                 onClick={() => {
@@ -218,13 +265,21 @@ const CallDetailsPanel = memo(function CallDetailsPanel({ call, onClose }: CallD
                     `${call.location.latitude}, ${call.location.longitude}`
                   );
                 }}
-                className="flex-1 px-4 py-3 lg:py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors duration-200 text-sm font-medium touch-manipulation"
+                className={`flex-1 px-4 py-3 lg:py-2 rounded-lg transition-colors duration-200 text-sm font-medium touch-manipulation ${
+                  isDarkMode 
+                    ? 'bg-blue-900 text-blue-200 hover:bg-blue-800' 
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
               >
                 Copy Coordinates
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-3 lg:py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200 text-sm font-medium touch-manipulation"
+                className={`flex-1 px-4 py-3 lg:py-2 rounded-lg transition-colors duration-200 text-sm font-medium touch-manipulation ${
+                  isDarkMode 
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 Close
               </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, memo } from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { EmergencyCall, URGENCY_COLORS } from '@/lib/types';
 
@@ -64,24 +64,13 @@ const CallMarker = memo(function CallMarker({ call, isSelected, onClick }: CallM
     }
   }, [isSelected, call.urgency]);
 
-  const formatTimestamp = (timestamp: string) => {
-    try {
-      return new Date(timestamp).toLocaleString();
-    } catch {
-      return timestamp;
-    }
-  };
-
-  const getUrgencyDisplayName = (urgency: string) => {
-    return urgency.charAt(0).toUpperCase() + urgency.slice(1);
-  };
 
   const handleMarkerClick = (e: L.LeafletMouseEvent) => {
     console.log('Marker clicked:', call.id);
     e.originalEvent?.stopPropagation(); // Prevent map click event
     
-    // Just let the popup open on marker click - don't trigger onClick yet
-    // The onClick will be triggered by the "Select Call" button in the popup
+    // Directly trigger the onClick to open the details panel
+    onClick();
   };
 
   return (
@@ -105,73 +94,7 @@ const CallMarker = memo(function CallMarker({ call, isSelected, onClick }: CallM
           }
         }
       }}
-    >
-      <Popup 
-        closeButton={true}
-        autoClose={false}
-        closeOnEscapeKey={true}
-        closeOnClick={false}
-      >
-        <div className="p-3 min-w-[250px] max-w-[300px]">
-          <div className="flex items-center gap-2 mb-3">
-            <div 
-              className="w-5 h-5 rounded-full border-2 border-white shadow-sm flex-shrink-0"
-              style={{ backgroundColor: URGENCY_COLORS[call.urgency] }}
-            />
-            <span className="font-semibold text-gray-900 text-base">
-              {getUrgencyDisplayName(call.urgency)} Priority
-            </span>
-          </div>
-          
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="font-medium text-gray-700">Call ID:</span>
-              <div className="text-gray-600">#{call.id}</div>
-            </div>
-            
-            <div>
-              <span className="font-medium text-gray-700">Location:</span>
-              <div className="text-gray-600">
-                {call.location.address || 
-                 `${call.location.latitude.toFixed(4)}, ${call.location.longitude.toFixed(4)}`}
-              </div>
-            </div>
-            
-            <div>
-              <span className="font-medium text-gray-700">Time:</span>
-              <div className="text-gray-600">{formatTimestamp(call.timestamp)}</div>
-            </div>
-            
-            <div>
-              <span className="font-medium text-gray-700">Description:</span>
-              <div className="text-gray-600 break-words">
-                {call.description.length > 150 
-                  ? `${call.description.substring(0, 150)}...` 
-                  : call.description}
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-3 pt-2 border-t border-gray-200">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Popup button clicked for call:', call.id);
-                // Close the popup first, then trigger selection
-                const marker = markerRef.current;
-                if (marker) {
-                  marker.closePopup();
-                }
-                onClick();
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline"
-            >
-              Select Call →
-            </button>
-          </div>
-        </div>
-      </Popup>
-    </Marker>
+    />
   );
 });
 

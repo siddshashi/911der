@@ -1,6 +1,6 @@
 import { EmergencyCall, BackendCaller, SSEMessage } from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 /**
  * Fetch all emergency calls from the FastAPI backend
