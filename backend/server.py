@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from emergency_classifier import EmergencyClassifier
 from twilio_webhook import webhook_handler
 from voice_agent import DeepgramVoiceAgent
+from groq_inference import get_call_summary
 
 load_dotenv()
 
@@ -145,6 +146,7 @@ async def process_speech(request: Request):
         # Classify the call using AI
         print("🤖 Classifying call...")
         classification_result = await emergency_classifier.classify_call(speech_result)
+        speech_summary = await get_call_summary(speech_result)
         
         print(f"📊 Classification: {classification_result}")
         
@@ -154,7 +156,7 @@ async def process_speech(request: Request):
                 "latitude": 37.8029,
                 "longitude": -122.44879,
                 "severity": severity,
-                "metadata": speech_result
+                "metadata": speech_summary
                 }
         response = supabase.table("callers").insert(caller_data).execute()
         print(f"saved caller to database: {response}")
