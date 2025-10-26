@@ -1,5 +1,6 @@
 from groq import AsyncGroq
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv()
 
@@ -46,3 +47,26 @@ async def get_call_summary(call_transcript: str) -> str:
     if content is None:
         return "ERROR: No content returned"
     return content.strip()
+
+if __name__ == "__main__":
+    # Sample usage
+    sample_transcripts = [
+        "My house is on fire and my family is trapped inside! We're on the second floor and the stairs are blocked. Please hurry, there's smoke everywhere!",
+        "I need help, my neighbor fell off a ladder and he's not moving. He's bleeding from his head. We're at 123 Main Street.",
+        "There's been a car accident on Highway 101 near the exit to downtown. Multiple cars involved, I can see people injured."
+    ]
+
+    async def demo():
+        print("911 Call Summary Generator Demo")
+        print("=" * 60)
+
+        for i, transcript in enumerate(sample_transcripts, 1):
+            print(f"\nCall #{i}:")
+            print(f"Transcript: {transcript}")
+            print("\nGenerating summary...")
+
+            summary = await get_call_summary(transcript)
+            print(f"Summary: {summary}")
+            print("-" * 60)
+
+    asyncio.run(demo())
