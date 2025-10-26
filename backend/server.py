@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from emergency_classifier import EmergencyClassifier
 from twilio_webhook import webhook_handler
 from voice_agent import DeepgramVoiceAgent
-from groq_inference import get_call_summary
+from groq_inference import get_call_summary, get_criticality_level
 
 load_dotenv()
 
@@ -147,11 +147,20 @@ async def process_speech(request: Request):
         print("🤖 Classifying call...")
         classification_result = await emergency_classifier.classify_call(speech_result)
         speech_summary = await get_call_summary(speech_result)
+        severity_as_enum = await get_criticality_level(speech_result)
+        print("Speech Summary", speech_summary)
+        if severity_as_enum not in enum_to_int:
+            print("Severity errored, defaulting to HIGH")
+            severity_as_enum = "HIGH"
+        else:
+            print("Severity:", severity_as_enum)
         
         print(f"📊 Classification: {classification_result}")
         
         # Sid's code: sending to supabase
-        severity = 1 if classification_result["is_emergency"] else 0
+        enum_to_int = {"CRITICAL": 4, "HIGH":3, "MEDIUM":2, "LOW":1}
+        
+        severity = enum_to_int[severity_as_enum]
         caller_data = {
                 "latitude": 37.8029,
                 "longitude": -122.44879,
